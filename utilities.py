@@ -193,7 +193,7 @@ def array_compare(sim_array, valid_array, cell_tol=0.01, array_tol=0.01):
         ErrorFile.write_error(err_msg)
         return False
 
-    validate = (sim_array - valid_array) / sim_array
+    validate = (sim_array - valid_array) / valid_array
 
     if np.abs(np.mean(validate)) > array_tol:
         err_msg = "Mean error: {:.2f} is greater than " \
@@ -205,7 +205,7 @@ def array_compare(sim_array, valid_array, cell_tol=0.01, array_tol=0.01):
     failure = np.where(np.abs(validate) > cell_tol)
 
     if failure[0].size > 0:
-        # todo: print cells where failure has occured!
+        # finds and prints where failure has occured due to cell tolerance
         err_msg = ""
         if len(failure) == 4:
             # four dimensional np.array from cbc
@@ -221,13 +221,13 @@ def array_compare(sim_array, valid_array, cell_tol=0.01, array_tol=0.01):
                 err_msg += "Array failure: kper: {}, layer: {}, " \
                            "row: {}, column {}, sim_val: {:.2f}, " \
                            "valid_val: {:.2f}, " \
-                           "percent difference: {}\n".format(per + 1,
-                                                             k + 1,
-                                                             i + 1,
-                                                             j + 1,
-                                                             sim_array[per, k, i, j],
-                                                             valid_array[per, k, i, j],
-                                                             validate[per, k, i, j])
+                           "percent difference: {:.3f}\n".format(per + 1,
+                                                                 k + 1,
+                                                                 i + 1,
+                                                                 j + 1,
+                                                                 sim_array[per, k, i, j],
+                                                                 valid_array[per, k, i, j],
+                                                                 validate[per, k, i, j])
 
         elif len(failure) == 3:
             # three dimensional np.array from cbc
@@ -241,12 +241,12 @@ def array_compare(sim_array, valid_array, cell_tol=0.01, array_tol=0.01):
                 err_msg += "Array failure: layer: {}, " \
                            "row: {}, column {}, sim_val: {:.2f}, " \
                            "valid_val: {:.2f}, " \
-                           "percent difference: {}\n".format(k + 1,
-                                                             i + 1,
-                                                             j + 1,
-                                                             sim_array[k, i, j],
-                                                             valid_array[k, i, j],
-                                                             validate[k, i, j])
+                           "percent difference: {:.3f}\n".format(k + 1,
+                                                                 i + 1,
+                                                                 j + 1,
+                                                                 sim_array[k, i, j],
+                                                                 valid_array[k, i, j],
+                                                                 validate[k, i, j])
 
         elif len(failure) == 2:
             # this should not happen, but lets catch it anyway
@@ -258,11 +258,11 @@ def array_compare(sim_array, valid_array, cell_tol=0.01, array_tol=0.01):
                 err_msg += "Array failure: layer: {}, " \
                            "column {}, sim_val: {:.2f}, " \
                            "valid_val: {:.2f}, " \
-                           "percent difference: {}\n".format(i + 1,
-                                                             j + 1,
-                                                             sim_array[i, j],
-                                                             valid_array[i, j],
-                                                             validate[i, j])
+                           "percent difference: {:.3f}\n".format(i + 1,
+                                                                 j + 1,
+                                                                 sim_array[i, j],
+                                                                 valid_array[i, j],
+                                                                 validate[i, j])
 
         elif len(failure) == 1:
             # budget items from listing file
@@ -270,10 +270,10 @@ def array_compare(sim_array, valid_array, cell_tol=0.01, array_tol=0.01):
             for cell in failed:
                 err_msg += "Array failure: entry number: {}, " \
                            "sim_val: {:.2f}, valid_val: {:.2f}, " \
-                           "percent difference: {}\n".format(cell + 1,
-                                                             sim_array[cell],
-                                                             valid_array[cell],
-                                                             validate[cell])
+                           "percent difference: {:.3f}\n".format(cell + 1,
+                                                                 sim_array[cell],
+                                                                 valid_array[cell],
+                                                                 validate[cell])
         ErrorFile.write_error(err_msg)
 
         return False
@@ -282,7 +282,7 @@ def array_compare(sim_array, valid_array, cell_tol=0.01, array_tol=0.01):
 
 
 def budget_compare(sim_budget, valid_budget,
-                   incermental_tolerance=0.01,
+                   incremental_tolerance=0.01,
                    budget_tolerance=0.01):
     """
     Budget comparisons from either list file objects or cbc file objects
@@ -305,7 +305,7 @@ def budget_compare(sim_budget, valid_budget,
             ErrorFile.write_error(err_msg)
             return False
 
-        validate = (sim_array - valid_array) /  sim_array
+        validate = (sim_array - valid_array) / valid_array
 
         if np.abs(np.mean(validate)) > budget_tolerance:
             err_msg = "Budget error: {:.2f} is greater than budget " \
@@ -316,7 +316,7 @@ def budget_compare(sim_budget, valid_budget,
 
             return False
 
-        failure = np.where(np.abs(validate) > incermental_tolerance)
+        failure = np.where(np.abs(validate) > incremental_tolerance)
 
         if failure[0].size > 0:
             err_msg = ""
@@ -334,13 +334,13 @@ def budget_compare(sim_budget, valid_budget,
                     err_msg += "Budget item: {}, kper: {}, layer: {}, " \
                                "row: {}, column {}, sim_val: {:.2f}, " \
                                "valid_val: {:.2f}, " \
-                               "percent difference: {}\n".format(key, per + 1,
-                                                                 k + 1,
-                                                                 i + 1,
-                                                                 j + 1,
-                                                                 sim_array[per, k, i, j],
-                                                                 valid_array[per, k, i, j],
-                                                                 validate[per, k, i, j])
+                               "percent difference: {:.3f}\n".format(key, per + 1,
+                                                                     k + 1,
+                                                                     i + 1,
+                                                                     j + 1,
+                                                                     sim_array[per, k, i, j],
+                                                                     valid_array[per, k, i, j],
+                                                                     validate[per, k, i, j])
 
             elif len(failure) == 3:
                 # three dimensional np.array from cbc
@@ -354,13 +354,13 @@ def budget_compare(sim_budget, valid_budget,
                     err_msg += "Budget item: {}, layer: {}, " \
                                "row: {}, column {}, sim_val: {:.2f}, " \
                                "valid_val: {:.2f}, " \
-                               "percent difference: {}\n".format(key,
-                                                                 k + 1,
-                                                                 i + 1,
-                                                                 j + 1,
-                                                                 sim_array[k, i, j],
-                                                                 valid_array[k, i, j],
-                                                                 validate[k, i, j])
+                               "percent difference: {:.3f}\n".format(key,
+                                                                     k + 1,
+                                                                     i + 1,
+                                                                     j + 1,
+                                                                     sim_array[k, i, j],
+                                                                     valid_array[k, i, j],
+                                                                     validate[k, i, j])
 
             elif len(failure) == 2:
                 # this should not happen, but lets catch it anyway
@@ -372,12 +372,12 @@ def budget_compare(sim_budget, valid_budget,
                     err_msg += "Budget item: {}, layer: {}, " \
                                "column {}, sim_val: {:.2f}, " \
                                "valid_val: {:.2f}, " \
-                               "percent difference: {}\n".format(key,
-                                                                 i + 1,
-                                                                 j + 1,
-                                                                 sim_array[i, j],
-                                                                 valid_array[i, j],
-                                                                 validate[i, j])
+                               "percent difference: {:.3f}\n".format(key,
+                                                                     i + 1,
+                                                                     j + 1,
+                                                                     sim_array[i, j],
+                                                                     valid_array[i, j],
+                                                                     validate[i, j])
 
             elif len(failure) == 1:
                 # budget items from listing file
@@ -385,10 +385,10 @@ def budget_compare(sim_budget, valid_budget,
                 for cell in failed:
                     err_msg += "Budget item: {}, entry number: {}, " \
                                "sim_val: {:.2f}, valid_val: {:.2f}, " \
-                               "percent difference: {}\n".format(key, cell + 1,
-                                                                 sim_array[cell],
-                                                                 valid_array[cell],
-                                                                 validate[cell])
+                               "percent difference: {:.3f}\n".format(key, cell + 1,
+                                                                     sim_array[cell],
+                                                                     valid_array[cell],
+                                                                     validate[cell])
             ErrorFile.write_error(err_msg)
 
             return False
