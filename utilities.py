@@ -34,6 +34,15 @@ class ErrorFile(object):
         with open(ErrorFile.name, 'a') as f:
             f.write(s)
 
+    @staticmethod
+    def write_model_name(s):
+        """
+        Method to append model name unit test to the error file
+        :param s: (str) string that refers to model name
+        """
+        with open(ErrorFile.name, 'a') as f:
+            f.write("@@@@@:  {}\n".format(s))
+
 
 class HeadFile(dict):
     """
@@ -166,10 +175,11 @@ class ListBudget(dict):
         return [key for key in sorted(self.keys())]
 
 
-def array_compare(sim_array, valid_array, cell_tol=0.01, array_tol=0.03):
+def array_compare(sim_array, valid_array, cell_tol=0.01, array_tol=0.01):
     """
     Utility similar to np.allclose to compare modflow output arrays for code
-    validation.
+    validation. Used for head comparisons primarily but can be used for any other
+    arrays of the same dimension.
 
     :param sim_array: (np.array) simulation array from new code base
     :param valid_array: (np.array) valid model solution
@@ -178,16 +188,94 @@ def array_compare(sim_array, valid_array, cell_tol=0.01, array_tol=0.03):
     :return: (bool) True == Pass, False == Fail
     """
 
+    if sim_array.shape != valid_array.shape:
+        err_msg = "Array shapes are not the same dimension\n"
+        ErrorFile.write_error(err_msg)
+        return False
+
     validate = (sim_array - valid_array) / sim_array
 
     if np.abs(np.mean(validate)) > array_tol:
+        err_msg = "Mean error: {:.2f} is greater than " \
+                  "array tolerance: {:.2f}".format(np.abs(np.mean(validate)),
+                                                   array_tol)
+        ErrorFile.write_error(err_msg)
         return False
 
     failure = np.where(np.abs(validate) > cell_tol)
 
     if failure[0].size > 0:
         # todo: print cells where failure has occured!
-        print("Failure")
+        err_msg = ""
+        if len(failure) == 4:
+            # four dimensional np.array from cbc
+            kper = failure[0]
+            layer = failure[1]
+            row = failure[2]
+            col = failure[3]
+
+            for failix, per in enumerate(kper):
+                k = layer[failix]
+                i = row[failix]
+                j = col[failix]
+                err_msg += "Array failure: kper: {}, layer: {}, " \
+                           "row: {}, column {}, sim_val: {:.2f}, " \
+                           "valid_val: {:.2f}, " \
+                           "percent difference: {}\n".format(per + 1,
+                                                             k + 1,
+                                                             i + 1,
+                                                             j + 1,
+                                                             sim_array[per, k, i, j],
+                                                             valid_array[per, k, i, j],
+                                                             validate[per, k, i, j])
+
+        elif len(failure) == 3:
+            # three dimensional np.array from cbc
+            layer = failure[0]
+            row = failure[1]
+            col = failure[2]
+
+            for failix, k in enumerate(layer):
+                i = row[failix]
+                j = col[failix]
+                err_msg += "Array failure: layer: {}, " \
+                           "row: {}, column {}, sim_val: {:.2f}, " \
+                           "valid_val: {:.2f}, " \
+                           "percent difference: {}\n".format(k + 1,
+                                                             i + 1,
+                                                             j + 1,
+                                                             sim_array[k, i, j],
+                                                             valid_array[k, i, j],
+                                                             validate[k, i, j])
+
+        elif len(failure) == 2:
+            # this should not happen, but lets catch it anyway
+            row = failure[0]
+            col = failure[1]
+
+            for failix, i in enumerate(row):
+                j = col[failix]
+                err_msg += "Array failure: layer: {}, " \
+                           "column {}, sim_val: {:.2f}, " \
+                           "valid_val: {:.2f}, " \
+                           "percent difference: {}\n".format(i + 1,
+                                                             j + 1,
+                                                             sim_array[i, j],
+                                                             valid_array[i, j],
+                                                             validate[i, j])
+
+        elif len(failure) == 1:
+            # budget items from listing file
+            failed = failure[0]
+            for cell in failed:
+                err_msg += "Array failure: entry number: {}, " \
+                           "sim_val: {:.2f}, valid_val: {:.2f}, " \
+                           "percent difference: {}\n".format(cell + 1,
+                                                             sim_array[cell],
+                                                             valid_array[cell],
+                                                             validate[cell])
+        ErrorFile.write_error(err_msg)
+
         return False
 
     return True
@@ -197,12 +285,12 @@ def budget_compare(sim_budget, valid_budget,
                    incermental_tolerance=0.01,
                    budget_tolerance=0.01):
     """
-    Budget comparisons from list files.
+    Budget comparisons from either list file objects or cbc file objects
 
-    :param sim_budget:
-    :param valid_budget:
-    :param incremental_tolerance:
-    :param budget_tolerance:
+    :param sim_budget: <ListBudget> instance or <CellByCellBudget> instance
+    :param valid_budget: <ListBudget> instance or <CellByCellBudget> instance
+    :param incremental_tolerance: fraction tolerance for any individual comparison
+    :param budget_tolerance: fraction total mean budget tolerance for comparison
     :return: (bool) True == Pass, False == Fail
     """
     if sim_budget.keys() != valid_budget.keys():
@@ -221,7 +309,7 @@ def budget_compare(sim_budget, valid_budget,
 
         if np.abs(np.mean(validate)) > budget_tolerance:
             err_msg = "Budget error: {:.2f} is greater than budget " \
-                      "tolerance: {:.2f}".format(np.abs(np.sum(validate)),
+                      "tolerance: {:.2f}".format(np.abs(np.mean(validate)),
                                                  budget_tolerance)
 
             ErrorFile.write_error(err_msg)
@@ -229,9 +317,6 @@ def budget_compare(sim_budget, valid_budget,
             return False
 
         failure = np.where(np.abs(validate) > incermental_tolerance)
-
-        # todo: need to check the shape of the arrays. Is it from a list file
-        # todo: or is it from a cbc file?
 
         if failure[0].size > 0:
             err_msg = ""
