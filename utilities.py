@@ -12,11 +12,9 @@ class ErrorFile(object):
     """
     name = "errors.txt"
 
-    header = """MODFLOW-OWHM2 unit testing error file created by python unit testing
-    utilities. Unit testing code base is located @ https://github.com/jlarsen-usgs/OWHM2-tests.
-    @@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
-
-    """
+    header = "MODFLOW-OWHM2 unit testing error file created by python unit testing\n"\
+    "utilities. Unit testing code base is located @ https://github.com/jlarsen-usgs/OWHM2-tests.\n"\
+    "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n\n"
 
     def __init__(self, error_name='errors.txt'):
         ErrorFile.name = error_name
@@ -153,10 +151,30 @@ class ListBudget(dict):
     def __get_budget(self):
         try:
             mflist = fp.utils.MfListBudget(self.__file)
-            budget = mflist.get_budget()
+            tbudget = mflist.get_budget()
+            if isinstance(tbudget, tuple):
+                for ix, recarr in enumerate(tbudget):
+                    if ix == 0:
+                        budget = recarr
+                    else:
+                        for rec in recarr:
+                            size = budget.shape[0] + 1
+                            budget.resize(size, refcheck=False)
+                            budget[-1] = rec
+
+            else:
+                budget = tbudget
+
+            del tbudget
+
         except:
             self.success = False
             self.fail_list.append('no_file')
+            return
+
+        if budget is None:
+            print('break')
+            self.success = False
             return
 
         for name in budget.dtype.names:
@@ -172,7 +190,7 @@ class ListBudget(dict):
                 self.fail_list.append(name)
 
     def keys(self):
-        return [key for key in sorted(self.keys())]
+        return [key for key in sorted(self)]
 
 
 def array_compare(sim_array, valid_array, cell_tol=0.01, array_tol=0.01):
@@ -192,6 +210,10 @@ def array_compare(sim_array, valid_array, cell_tol=0.01, array_tol=0.01):
         err_msg = "Array shapes are not the same dimension\n"
         ErrorFile.write_error(err_msg)
         return False
+
+    # use small number to ensure there are no divide by zero errors or nan values
+    sim_array[sim_array == 0.] = 1e-10
+    valid_array[valid_array == 0.] = 1e-10
 
     validate = (sim_array - valid_array) / valid_array
 
@@ -305,12 +327,20 @@ def budget_compare(sim_budget, valid_budget,
             ErrorFile.write_error(err_msg)
             return False
 
-        validate = (sim_array - valid_array) / valid_array
+        # use small number to ensure there are no divide by zero errors or nan values
+        offset_sim_array = sim_array + 1.23456789
+        offset_valid_array = valid_array + 1.23456789
+
+        validate = (offset_sim_array - offset_valid_array) / offset_valid_array
+
+        # validate[np.isnan(validate)] = 0.
 
         if np.abs(np.mean(validate)) > budget_tolerance:
-            err_msg = "Budget error: {:.2f} is greater than budget " \
-                      "tolerance: {:.2f}".format(np.abs(np.mean(validate)),
-                                                 budget_tolerance)
+            err_msg = "Budget item {}: Budget error: {:.2f} " \
+                      "is greater than budget " \
+                      "tolerance: {:.2f}\n".format(key,
+                                                   np.abs(np.mean(validate)),
+                                                   budget_tolerance)
 
             ErrorFile.write_error(err_msg)
 
