@@ -396,6 +396,12 @@ def budget_compare(sim_budget, valid_budget,
     return True
 
 
+def get_file_names(ws, filter=".lst"):
+    return [f for f in os.listdir(ws)
+            if os.path.isfile(os.path.join(ws, f))
+            and f.endswith(filter)]
+
+
 if __name__ == "__main__":
     x = np.arange(25)
     y = np.arange(25)
