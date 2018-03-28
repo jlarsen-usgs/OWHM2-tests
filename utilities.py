@@ -173,7 +173,6 @@ class ListBudget(dict):
             return
 
         if budget is None:
-            print('break')
             self.success = False
             return
 
