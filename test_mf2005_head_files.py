@@ -1,6 +1,7 @@
+import pytest
 import utilities as ut
 import os
-import pytest
+
 
 
 ut.ErrorFile(error_name="mf2005_head_error.txt")
@@ -11,6 +12,8 @@ owhm2_output_ws = os.path.join(script_ws, "OWHM_Example_Problems/test-out")
 
 head_file_names =  ut.get_file_names(valid_output_ws, filter=".hed")
 head_file_names += ut.get_file_names(valid_output_ws, filter=".hds")
+head_file_names += ut.get_file_names(valid_output_ws, filter=".out")
+head_file_names += ut.get_file_names(valid_output_ws, filter=".ufh")
 
 setup = [(hf, owhm2_output_ws, valid_output_ws) for hf in head_file_names]
 
@@ -39,6 +42,7 @@ def test_mf2005_head(name, owhm2_ws, valid_ws):
             ut.ErrorFile.write_error("Unkown loading error\n")
             assert owhm2.success
             assert valid.success
+
 
 """
 # code for debugging!!!!
