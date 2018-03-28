@@ -104,14 +104,14 @@ class CellByCellBudget(dict):
     dictionary object
 
     :param ws: (str) output directory workspace
-    :param budname: (str) budget file name
+    :param budgetname: (str) budget file name
     :param precision: (str) single or double are only valid params
     """
-    def __init__(self, ws, budname, precision='single'):
+    def __init__(self, ws, budgetname, precision='single'):
         self.__ws = ws
-        self.__name = budname
+        self.__name = budgetname
         self.__precision = precision
-        self.__file = os.path.join(ws, budname)
+        self.__file = os.path.join(ws, budgetname)
         self.__ignore = ('totim', 'time_step', 'stress_period')
         self.success = True
         self.fail_list = []
@@ -123,7 +123,7 @@ class CellByCellBudget(dict):
         try:
             bud = fp.utils.CellBudgetFile(self.__file,
                                           precision=self.__precision)
-            records = bud.get_unique_record_names()
+            records = bud.unique_record_names()
 
         except:
             self.success = False
@@ -135,14 +135,14 @@ class CellByCellBudget(dict):
                 if name.strip().lower() in self.__ignore:
                     pass
                 else:
-                    self[name.strip().upper()] = bud.get_data(text=name,
-                                                              full3D=True)
+                    self[name.strip().upper()] = np.array(bud.get_data(text=name,
+                                                                       full3D=True))
             except:
                 self.sucess = False
                 self.fail_list.append(name)
 
     def keys(self):
-        return [key for key in sorted(self.keys())]
+        return [key for key in sorted(self)]
 
 
 class ListBudget(dict):
