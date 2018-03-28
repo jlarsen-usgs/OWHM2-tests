@@ -325,7 +325,8 @@ def array_compare(sim_array, valid_array, cell_tol=0.01, array_tol=0.01):
 
 def budget_compare(sim_budget, valid_budget,
                    incremental_tolerance=0.01,
-                   budget_tolerance=0.01):
+                   budget_tolerance=0.01,
+                   offset=100.):
     """
     Budget comparisons from either list file objects or cbc file objects
 
@@ -333,6 +334,7 @@ def budget_compare(sim_budget, valid_budget,
     :param valid_budget: <ListBudget> instance or <CellByCellBudget> instance
     :param incremental_tolerance: fraction tolerance for any individual comparison
     :param budget_tolerance: fraction total mean budget tolerance for comparison
+    :param offset: (float) small number dampening offset.
     :return: (bool) True == Pass, False == Fail
     """
     if sim_budget.keys() != valid_budget.keys():
@@ -347,13 +349,25 @@ def budget_compare(sim_budget, valid_budget,
             ErrorFile.write_error(err_msg)
             return False
 
+        # todo: continue thinking about this tolerance issue!
         # use small number to ensure there are no divide by zero errors or nan values
-        offset_sim_array = sim_array + 1.123456789
-        offset_valid_array = valid_array + 1.123456789
+        # offset_sim_array = np.zeros(sim_array.shape)
+        # offset_valid_array = np.zeros(valid_array.shape)
 
-        validate = (offset_sim_array - offset_valid_array) / offset_valid_array
+        # offset_sim_array[sim_array >= 0] = sim_array[sim_array >= 0] + offset
+        # offset_sim_array[sim_array < 0] = sim_array[sim_array < 0] - offset
 
-        # validate[np.isnan(validate)] = 0.
+        # offset_valid_array[valid_array >= 0] = valid_array[valid_array >= 0] + offset
+        # offset_valid_array[valid_array < 0] = valid_array[valid_array < 0] - offset
+
+        # offset_sim_array = sim_array + 1.123456789
+        # offset_valid_array = valid_array + 1.123456789
+
+        lsim_array = np.abs(sim_array) + offset
+        lvalid_array = np.abs(valid_array) + offset
+
+        validate = (lsim_array - lvalid_array) / lvalid_array
+
 
         if np.abs(np.mean(validate)) > budget_tolerance:
             err_msg = "Budget item {}: Budget error: {:.2f} " \
