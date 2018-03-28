@@ -19,7 +19,6 @@ def test_mf2005_simulations(name, owhm2_ws, valid_ws):
     owhm2 = ut.ListBudget(ws=owhm2_ws, listname=name)
     valid = ut.ListBudget(ws=valid_ws, listname=name)
 
-    print(name)
     if owhm2.success and valid.success:
         assert ut.budget_compare(sim_budget=owhm2, valid_budget=valid,
                                  incremental_tolerance=0.05,
@@ -41,4 +40,6 @@ for lf in list_file_names:
         ut.budget_compare(sim_budget=owhm2, valid_budget=valid,
                                  incremental_tolerance=0.01,
                                  budget_tolerance=0.01)
+    else:
+        print('break')
 """

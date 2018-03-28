@@ -62,9 +62,13 @@ class HeadFile(dict):
         self.fail_list = []
 
         super(HeadFile, self).__init__()
-        self.__get_heads()
+        self.__get_binary_heads()
 
-    def __get_heads(self):
+        if not self.success:
+            # try reading it as a formatted head file
+            self.__get_formatted_heads()
+
+    def __get_binary_heads(self):
         try:
             head = fp.utils.HeadFile(self.__file, precision=self.__precision)
         except:
@@ -78,6 +82,20 @@ class HeadFile(dict):
             self.success = False
             self.fail_list.append('head')
 
+    def __get_formatted_heads(self):
+        try:
+            head = fp.utils.FormattedHeadFile(self.__file,
+                                              precision=self.__precision)
+        except:
+            return
+
+        try:
+            self.head = head.get_alldata()
+            self.success = True
+            self.fail_list = []
+        except:
+            self.fail_list = ['head']
+            return
 
 class CellByCellBudget(dict):
     """
@@ -211,10 +229,13 @@ def array_compare(sim_array, valid_array, cell_tol=0.01, array_tol=0.01):
         return False
 
     # use small number to ensure there are no divide by zero errors or nan values
-    sim_array[sim_array == 0.] = 1e-10
-    valid_array[valid_array == 0.] = 1e-10
+    # sim_array[sim_array == 0.] = 1e-10
+    # valid_array[valid_array == 0.] = 1e-10
 
-    validate = (sim_array - valid_array) / valid_array
+    offset_sim_array = sim_array + 1.123456789
+    offset_valid_array = valid_array + 1.123456789
+
+    validate = (offset_sim_array - offset_valid_array) / offset_valid_array
 
     if np.abs(np.mean(validate)) > array_tol:
         err_msg = "Mean error: {:.2f} is greater than " \
@@ -327,8 +348,8 @@ def budget_compare(sim_budget, valid_budget,
             return False
 
         # use small number to ensure there are no divide by zero errors or nan values
-        offset_sim_array = sim_array + 1.23456789
-        offset_valid_array = valid_array + 1.23456789
+        offset_sim_array = sim_array + 1.123456789
+        offset_valid_array = valid_array + 1.123456789
 
         validate = (offset_sim_array - offset_valid_array) / offset_valid_array
 
