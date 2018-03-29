@@ -75,7 +75,8 @@ class HeadFile(dict):
 
     def __simple_binary(self):
         """
-        Very simple binary file checker!
+        Extremely simple binary file checker! Works for head files, but
+        not comprehensive by any nature!
         :return: bool
         """
         try:
@@ -88,12 +89,12 @@ class HeadFile(dict):
             self.__binary = False
 
         except:
-
             self.success = False
 
     def __get_binary_heads(self):
         try:
             head = fp.utils.HeadFile(self.__file, precision=self.__precision)
+
         except:
             self.success = False
             self.fail_list.append("no_file")
@@ -101,6 +102,7 @@ class HeadFile(dict):
 
         try:
             self.head = head.get_alldata()
+
         except:
             self.success = False
             self.fail_list.append('head')
