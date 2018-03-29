@@ -57,16 +57,39 @@ class HeadFile(dict):
         self.__precision = precision
         self.__file = os.path.join(ws, headname)
         self.__ignore = ('totim', 'time_step', 'stress_period')
+        self.__binary = True
         self.success = True
         self.head = np.array([])
         self.fail_list = []
 
+        self.__simple_binary()
         super(HeadFile, self).__init__()
-        self.__get_binary_heads()
 
-        if not self.success:
-            # try reading it as a formatted head file
-            self.__get_formatted_heads()
+        if self.success:
+            if self.__binary:
+
+                self.__get_binary_heads()
+            else:
+                # try reading it as a formatted head file
+                self.__get_formatted_heads()
+
+    def __simple_binary(self):
+        """
+        Very simple binary file checker!
+        :return: bool
+        """
+        try:
+            with open(self.__file) as bc:
+                line = bc.readline()
+
+            if b'\x00' in line:
+                return
+
+            self.__binary = False
+
+        except:
+
+            self.success = False
 
     def __get_binary_heads(self):
         try:
