@@ -169,21 +169,7 @@ class ListBudget(dict):
     def __get_budget(self):
         try:
             mflist = fp.utils.MfListBudget(self.__file)
-            tbudget = mflist.get_budget()
-            if isinstance(tbudget, tuple):
-                for ix, recarr in enumerate(tbudget):
-                    if ix == 0:
-                        budget = recarr
-                    else:
-                        for rec in recarr:
-                            size = budget.shape[0] + 1
-                            budget.resize(size, refcheck=False)
-                            budget[-1] = rec
-
-            else:
-                budget = tbudget
-
-            del tbudget
+            budget = mflist.get_budget()[0]
 
         except:
             self.success = False
@@ -229,8 +215,6 @@ def array_compare(sim_array, valid_array, cell_tol=0.01, array_tol=0.01):
         return False
 
     # use small number to ensure there are no divide by zero errors or nan values
-    # sim_array[sim_array == 0.] = 1e-10
-    # valid_array[valid_array == 0.] = 1e-10
 
     offset_sim_array = sim_array + 1.123456789
     offset_valid_array = valid_array + 1.123456789
@@ -341,6 +325,10 @@ def budget_compare(sim_budget, valid_budget,
         return False
 
     for key in valid_budget.keys():
+
+        if key in ("PERCENT_DISCREPANCY", "IN-OUT"):
+             continue
+
         sim_array = sim_budget[key]
         valid_array = valid_budget[key]
 
@@ -350,24 +338,13 @@ def budget_compare(sim_budget, valid_budget,
             return False
 
         # todo: continue thinking about this tolerance issue!
-        # use small number to ensure there are no divide by zero errors or nan values
-        # offset_sim_array = np.zeros(sim_array.shape)
-        # offset_valid_array = np.zeros(valid_array.shape)
-
-        # offset_sim_array[sim_array >= 0] = sim_array[sim_array >= 0] + offset
-        # offset_sim_array[sim_array < 0] = sim_array[sim_array < 0] - offset
-
-        # offset_valid_array[valid_array >= 0] = valid_array[valid_array >= 0] + offset
-        # offset_valid_array[valid_array < 0] = valid_array[valid_array < 0] - offset
-
-        # offset_sim_array = sim_array + 1.123456789
-        # offset_valid_array = valid_array + 1.123456789
+        # must use a larger offset ~100 to account for differences in small
+        # budget values!
 
         lsim_array = np.abs(sim_array) + offset
         lvalid_array = np.abs(valid_array) + offset
 
         validate = (lsim_array - lvalid_array) / lvalid_array
-
 
         if np.abs(np.mean(validate)) > budget_tolerance:
             err_msg = "Budget item {}: Budget error: {:.2f} " \
