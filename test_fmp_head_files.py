@@ -12,7 +12,7 @@ owhm2_output_ws = os.path.join(script_ws, "OWHM_Example_Problems/test-out-fmp")
 
 head_file_names =  ut.get_file_names(valid_output_ws, filter=".hed")
 head_file_names += ut.get_file_names(valid_output_ws, filter=".hds")
-head_file_names += ut.get_file_names(valid_output_ws, filter=".out")
+# head_file_names += ut.get_file_names(valid_output_ws, filter=".out")
 head_file_names += ut.get_file_names(valid_output_ws, filter=".ufh")
 
 setup = [(hf, owhm2_output_ws, valid_output_ws) for hf in head_file_names]

@@ -465,7 +465,7 @@ def budget_compare(sim_budget, valid_budget,
 def get_file_names(ws, filter=".lst"):
     return [f for f in os.listdir(ws)
             if os.path.isfile(os.path.join(ws, f))
-            and f.endswith(filter)]
+            and f.lower().endswith(filter.lower())]
 
 
 if __name__ == "__main__":

@@ -2,7 +2,7 @@ import pytest
 import utilities as ut
 import os
 
-ut.ErrorFile(error_name="lgr_error.txt")
+ut.ErrorFile(error_name="rip_error.txt")
 
 script_ws = os.path.dirname(os.path.abspath(__file__))
 valid_output_ws = os.path.join(script_ws, "OWHM_Example_Problems/test-out-true-rip")
