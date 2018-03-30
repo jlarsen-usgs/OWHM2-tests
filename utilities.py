@@ -272,7 +272,7 @@ def array_compare(sim_array, valid_array, cell_tol=0.01, array_tol=0.01):
                 err_msg += "Array failure: kper: {}, layer: {}, " \
                            "row: {}, column {}, sim_val: {:.2f}, " \
                            "valid_val: {:.2f}, " \
-                           "percent difference: {:.3f}\n".format(per + 1,
+                           "failure criteria : {:.3f}\n".format(per + 1,
                                                                  k + 1,
                                                                  i + 1,
                                                                  j + 1,
@@ -292,7 +292,7 @@ def array_compare(sim_array, valid_array, cell_tol=0.01, array_tol=0.01):
                 err_msg += "Array failure: layer: {}, " \
                            "row: {}, column {}, sim_val: {:.2f}, " \
                            "valid_val: {:.2f}, " \
-                           "percent difference: {:.3f}\n".format(k + 1,
+                           "failure criteria : {:.3f}\n".format(k + 1,
                                                                  i + 1,
                                                                  j + 1,
                                                                  sim_array[k, i, j],
@@ -309,7 +309,7 @@ def array_compare(sim_array, valid_array, cell_tol=0.01, array_tol=0.01):
                 err_msg += "Array failure: layer: {}, " \
                            "column {}, sim_val: {:.2f}, " \
                            "valid_val: {:.2f}, " \
-                           "percent difference: {:.3f}\n".format(i + 1,
+                           "failure criteria : {:.3f}\n".format(i + 1,
                                                                  j + 1,
                                                                  sim_array[i, j],
                                                                  valid_array[i, j],
@@ -321,7 +321,7 @@ def array_compare(sim_array, valid_array, cell_tol=0.01, array_tol=0.01):
             for cell in failed:
                 err_msg += "Array failure: entry number: {}, " \
                            "sim_val: {:.2f}, valid_val: {:.2f}, " \
-                           "percent difference: {:.3f}\n".format(cell + 1,
+                           "failure criteria : {:.3f}\n".format(cell + 1,
                                                                  sim_array[cell],
                                                                  valid_array[cell],
                                                                  validate[cell])
@@ -349,115 +349,127 @@ def budget_compare(sim_budget, valid_budget,
     if sim_budget.keys() != valid_budget.keys():
         return False
 
-    for key in valid_budget.keys():
+    for test_pass in range(2):
+        # use a two pass approach, first pass is budget items,
+        # second pass is storages and storage differences
 
-        if key in ("PERCENT_DISCREPANCY", "IN-OUT"):
-             continue
+        for key in valid_budget.keys():
 
-        sim_array = sim_budget[key]
-        valid_array = valid_budget[key]
+            if test_pass == 0:
+                if key in ("PERCENT_DISCREPANCY", "IN-OUT",
+                           "STORAGE_IN", "STORAGE_OUT"):
+                     continue
 
-        if sim_array.size != valid_array.size:
-            err_msg = "Budget arrays are not compatible\n"
-            ErrorFile.write_error(err_msg)
-            return False
+            else:
+                if key not in ("IN-OUT", "STORAGE_IN", "STORAGE_OUT"):
+                    continue
 
-        # todo: continue thinking about this tolerance issue!
-        # must use a larger offset ~100 to account for differences in small
-        # budget values!
+            sim_array = sim_budget[key]
+            valid_array = valid_budget[key]
 
-        lsim_array = np.abs(sim_array) + offset
-        lvalid_array = np.abs(valid_array) + offset
+            if sim_array.size != valid_array.size:
+                err_msg = "Budget arrays are not compatible: {}\n".format(key)
+                ErrorFile.write_error(err_msg)
+                return False
 
-        validate = (lsim_array - lvalid_array) / lvalid_array
+            # todo: continue thinking about this tolerance issue!
+            # must use a larger offset ~100 to account for differences in small
+            # budget values!
 
-        if np.abs(np.mean(validate)) > budget_tolerance:
-            err_msg = "Budget item {}: Budget error: {:.2f} " \
-                      "is greater than budget " \
-                      "tolerance: {:.2f}\n".format(key,
-                                                   np.abs(np.mean(validate)),
-                                                   budget_tolerance)
+            lsim_array = np.abs(sim_array) + offset
+            lvalid_array = np.abs(valid_array) + offset
 
-            ErrorFile.write_error(err_msg)
+            validate = (lsim_array - lvalid_array) / lvalid_array
 
-            return False
+            if np.abs(np.mean(validate)) > budget_tolerance:
+                err_msg = "Budget item {}: Budget error: {:.2f} " \
+                          "is greater than budget " \
+                          "tolerance: {:.2f}\n".format(key,
+                                                       np.abs(np.mean(validate)),
+                                                       budget_tolerance)
 
-        failure = np.where(np.abs(validate) > incremental_tolerance)
+                ErrorFile.write_error(err_msg)
 
-        if failure[0].size > 0:
-            err_msg = ""
-            if len(failure) == 4:
-                # four dimensional np.array from cbc
-                kper = failure[0]
-                layer = failure[1]
-                row = failure[2]
-                col = failure[3]
+                return False
 
-                for failix, per in enumerate(kper):
-                    k = layer[failix]
-                    i = row[failix]
-                    j = col[failix]
-                    err_msg += "Budget item: {}, kper: {}, layer: {}, " \
-                               "row: {}, column {}, sim_val: {:.2f}, " \
-                               "valid_val: {:.2f}, " \
-                               "percent difference: {:.3f}\n".format(key, per + 1,
-                                                                     k + 1,
-                                                                     i + 1,
-                                                                     j + 1,
-                                                                     sim_array[per, k, i, j],
-                                                                     valid_array[per, k, i, j],
-                                                                     validate[per, k, i, j])
+            failure = np.where(np.abs(validate) > incremental_tolerance)
 
-            elif len(failure) == 3:
-                # three dimensional np.array from cbc
-                layer = failure[0]
-                row = failure[1]
-                col = failure[2]
+            if failure[0].size > 0:
+                err_msg = ""
+                if len(failure) == 4:
+                    # four dimensional np.array from cbc
+                    kper = failure[0]
+                    layer = failure[1]
+                    row = failure[2]
+                    col = failure[3]
 
-                for failix, k in enumerate(layer):
-                    i = row[failix]
-                    j = col[failix]
-                    err_msg += "Budget item: {}, layer: {}, " \
-                               "row: {}, column {}, sim_val: {:.2f}, " \
-                               "valid_val: {:.2f}, " \
-                               "percent difference: {:.3f}\n".format(key,
-                                                                     k + 1,
-                                                                     i + 1,
-                                                                     j + 1,
-                                                                     sim_array[k, i, j],
-                                                                     valid_array[k, i, j],
-                                                                     validate[k, i, j])
+                    for failix, per in enumerate(kper):
+                        k = layer[failix]
+                        i = row[failix]
+                        j = col[failix]
+                        err_msg += "Budget item: {}, kper: {}, layer: {}, " \
+                                   "row: {}, column {}, sim_val: {:.2f}, " \
+                                   "valid_val: {:.2f}, " \
+                                   "failure criteria : {:.3f}\n".format(key,
+                                                                        per + 1,
+                                                                        k + 1,
+                                                                        i + 1,
+                                                                        j + 1,
+                                                                        sim_array[per, k, i, j],
+                                                                        valid_array[per, k, i, j],
+                                                                        validate[per, k, i, j])
 
-            elif len(failure) == 2:
-                # this should not happen, but lets catch it anyway
-                row = failure[0]
-                col = failure[1]
+                elif len(failure) == 3:
+                    # three dimensional np.array from cbc
+                    layer = failure[0]
+                    row = failure[1]
+                    col = failure[2]
 
-                for failix, i in enumerate(row):
-                    j = col[failix]
-                    err_msg += "Budget item: {}, layer: {}, " \
-                               "column {}, sim_val: {:.2f}, " \
-                               "valid_val: {:.2f}, " \
-                               "percent difference: {:.3f}\n".format(key,
-                                                                     i + 1,
-                                                                     j + 1,
-                                                                     sim_array[i, j],
-                                                                     valid_array[i, j],
-                                                                     validate[i, j])
+                    for failix, k in enumerate(layer):
+                        i = row[failix]
+                        j = col[failix]
+                        err_msg += "Budget item: {}, layer: {}, " \
+                                   "row: {}, column {}, sim_val: {:.2f}, " \
+                                   "valid_val: {:.2f}, " \
+                                   "failure criteria : {:.3f}\n".format(key,
+                                                                        k + 1,
+                                                                        i + 1,
+                                                                        j + 1,
+                                                                        sim_array[k, i, j],
+                                                                        valid_array[k, i, j],
+                                                                        validate[k, i, j])
 
-            elif len(failure) == 1:
-                # budget items from listing file
-                failed = failure[0]
-                for cell in failed:
-                    err_msg += "Budget item: {}, entry number: {}, " \
-                               "sim_val: {:.2f}, valid_val: {:.2f}, " \
-                               "percent difference: {:.3f}\n".format(key, cell + 1,
-                                                                     sim_array[cell],
-                                                                     valid_array[cell],
-                                                                     validate[cell])
-            ErrorFile.write_error(err_msg)
+                elif len(failure) == 2:
+                    # this should not happen, but lets catch it anyway
+                    row = failure[0]
+                    col = failure[1]
 
-            return False
+                    for failix, i in enumerate(row):
+                        j = col[failix]
+                        err_msg += "Budget item: {}, layer: {}, " \
+                                   "column {}, sim_val: {:.2f}, " \
+                                   "valid_val: {:.2f}, " \
+                                   "failure criteria : {:.3f}\n".format(key,
+                                                                        i + 1,
+                                                                        j + 1,
+                                                                        sim_array[i, j],
+                                                                        valid_array[i, j],
+                                                                        validate[i, j])
+
+                elif len(failure) == 1:
+                    # budget items from listing file
+                    failed = failure[0]
+                    for cell in failed:
+                        err_msg += "Budget item: {}, entry number: {}, " \
+                                   "sim_val: {:.2f}, valid_val: {:.2f}, " \
+                                   "failure criteria : {:.3f}\n".format(key,
+                                                                        cell + 1,
+                                                                        sim_array[cell],
+                                                                        valid_array[cell],
+                                                                        validate[cell])
+                ErrorFile.write_error(err_msg)
+
+                return False
 
     return True
 
