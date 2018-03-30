@@ -3,6 +3,13 @@ import flopy as fp
 import os
 
 
+class CommonExtentions(object):
+    list_file = [".lst", ".list"]
+    head_file = [".hed", ".head", ".hds", ".ufh"]
+    budget_file = [".cbc", ".bud"]
+    out_file = [".out"]
+
+
 class ErrorFile(object):
     """
     Class object to create and store unit testing failure information
@@ -121,6 +128,7 @@ class HeadFile(dict):
         except:
             self.fail_list = ['head']
             return
+
 
 class CellByCellBudget(dict):
     """
