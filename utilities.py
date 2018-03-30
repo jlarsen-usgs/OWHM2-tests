@@ -384,6 +384,11 @@ def budget_compare(sim_budget, valid_budget,
             # must use a larger offset ~100 to account for differences in small
             # budget values!
 
+            # Not sure that absolute value is appropriate???
+            #   Has the potential for false positives if sign is switched
+            #   Maybe use -50 as an offset criteria cutoff? x < -50; x -= 100
+            #                                               x >= -50; x += 100
+
             lsim_array = np.abs(sim_array) + offset
             lvalid_array = np.abs(valid_array) + offset
 
