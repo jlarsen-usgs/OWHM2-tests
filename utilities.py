@@ -414,6 +414,9 @@ class FarmOutputs(dict):
             self[fid][self.__timeunit] = new_time
             self[fid]['per'] = np.arange(1, np.max(per) + 1, dtype=int)
 
+    def keys(self):
+        return [key for key in sorted(self)]
+
 
 def array_compare(sim_array, valid_array, cell_tol=0.01, array_tol=0.01):
     """
@@ -671,6 +674,31 @@ def budget_compare(sim_budget, valid_budget,
                 return False
 
     return True
+
+
+def farm_outputs_compare(sim_budget, valid_budget,
+                         incremental_tolerance=0.01,
+                         budget_tolerance=0.01,
+                         offset=100.):
+    """
+    Budget comparisions from farm process output files such as FBDETAILS and
+    FDS.OUT
+    :param sim_budget: <FarmOutputs> class object
+    :param valid_budget: <FarmOutputs> class object
+    :param incremental_tolerance: (float) fraction tolerance for each budget item
+    :param budget_tolerance: (float) mean tolerance for full budget item
+    :param offset: (float) small number dampening offset.
+    :return: True == Pass, False == Fail
+    """
+    if sim_budget.keys != valid_budget.keys:
+        ErrorFile.write_error("Farm numbers do not match")
+        return False
+
+    for key in sim_budget.keys:
+        return budget_compare(sim_budget[key], valid_budget[key],
+                              incremental_tolerance=incremental_tolerance,
+                              budget_tolerance=budget_tolerance,
+                              offset=offset)
 
 
 def get_file_names(ws, filter=".lst"):
