@@ -229,6 +229,192 @@ class ListBudget(dict):
         return [key for key in sorted(self)]
 
 
+class FarmOutputs(dict):
+    """
+    Reader for FBDetails and FDS.out for the farm process package.
+    Can be extended to other farm process outputs.
+
+    :param ws: (str) directory of output file
+    :param outname: (str) name of the output file
+    """
+    ignore = ('active',
+              'date_start',
+              'def-flag',
+              'drch',
+              'fid',
+              'q-discrepancy[%]',
+              'q-in-out')
+
+    isint = ('per', 'stp', 'fid')
+    isstr = ()
+
+    def __init__(self, ws, outname):
+        self.__ws = ws
+        self.__name = outname
+        self.__file = os.path.join(ws, outname)
+        self.__header = []
+        self.success = True
+        self.fail_list = []
+        self.__timeunit = None
+
+        super(FarmOutputs, self).__init__()
+
+        self.__get_budget()
+
+    def __get_budget(self):
+        """
+        Reader definition for farm process output files, sets data
+        to FarmOutput dictionary
+        """
+        with open(self.__file) as fout:
+            self.__get_header(fout.readline())
+            kper_idx = self.__header.index('per')
+            fid_idx = self.__header.index('fid')
+
+            while True:
+                line = fout.readline()
+                if not line:
+                    break
+
+                t = line.strip().split()
+                fid = int(t[fid_idx])
+
+                if fid not in self:
+                    self[fid] = {}
+
+                    for h in self.__header:
+                        if h in FarmOutputs.ignore:
+                            pass
+
+                        elif h.startswith('v-'):
+                            pass
+
+                        else:
+                            self[fid][h] = []
+
+                    self.__set_data(fid, t)
+
+                else:
+                    self.__set_data(fid, t)
+
+    def __set_data(self, fid, data):
+        for ix, h in enumerate(self.__header):
+            if h in FarmOutputs.ignore:
+                pass
+
+            else:
+                if h.startswith('v-'):
+                    pass
+
+                elif h in FarmOutputs.isint:
+                    self[fid][h].append(int(data[ix]))
+
+                elif h in FarmOutputs.isstr:
+                    self[fid][h].append(data[ix])
+
+                else:
+                    self[fid][h].append(float(data[ix]))
+
+    def __get_header(self, line):
+        self.__header = line.lower().strip().split()
+
+    def __set_timestep_length(self):
+        for k, v in self.items():
+            if 'days' in v:
+                self.__timeunit = 'days'
+                cum_time = np.array(v['days'])
+                break
+
+            elif 'minutes' in v:
+                self.__timeunit = 'minutes'
+                cum_time = np.array(v['minutes'])
+                break
+
+            elif 'years' in v:
+                self.__timeunit = 'years'
+                cum_time = np.array(v['years'])
+                break
+
+            elif 'seconds' in v:
+                self.__timeunit = 'seconds'
+                cum_time = np.array(v['seconds'])
+                break
+
+            else:
+                raise AssertionError("Cant discerne time step from data")
+
+        ts_time = np.zeros(cum_time.shape)
+        ts_time[0] = cum_time[0]
+
+        ts_time[1:] = cum_time[1:] - cum_time[:-1]
+
+        for k in self:
+            self[k]['ts_time'] = ts_time
+
+    def __calculate_harmonic_mean(self, data_dict):
+        """
+        Calculates a harmonic mean using the kper data and ts length
+        :param data_dict: dictionary with data, tslen
+        :return: np.ndarray
+        """
+        sp_data = []
+        for per, data in sorted(data_dict.items()):
+            numerator = 0
+            for ix, v in enumerate(data['data']):
+                numerator += (v * data['tslen'][ix])
+
+            sp_data.append(numerator / np.sum(data['tslen']))
+
+        return np.array(sp_data)
+
+    def raw_to_stress_period(self):
+        """
+        Converts raw data to stress period based fluxes.
+        """
+        ignore = ('per', 'stp', 'ts_time', 'days')
+        self.__set_timestep_length()
+
+        for fid, datadict in self.items():
+            per = datadict['per']
+            ts_time = datadict['ts_time']
+
+            for key, data in datadict.items():
+                if key in ignore:
+                    pass
+                else:
+                    temp = {}
+                    for ix, point in enumerate(data):
+                        kper = per[ix]
+                        tslen = ts_time[ix]
+
+                        if kper in temp:
+                            temp[kper]['data'].append(point)
+                            temp[kper]['tslen'].append(tslen)
+                        else:
+                            temp[kper] = {'data' :[point],
+                                          'tslen':[tslen]}
+
+                    sp_data = self.__calculate_harmonic_mean(temp)
+                    self[fid][key] = sp_data
+
+            datadict.pop('ts_time')
+            datadict.pop('stp')
+            time = datadict[self.__timeunit]
+
+            new_time = []
+            t = per[0]
+            for ix, kper in enumerate(per):
+                if kper > t:
+                    t = kper
+                    new_time.append(time[ix - 1])
+                else:
+                    pass
+
+            new_time.append(time[-1])
+            self[fid][self.__timeunit] = new_time
+            self[fid]['per'] = np.arange(1, np.max(per) + 1, dtype=int)
+
+
 def array_compare(sim_array, valid_array, cell_tol=0.01, array_tol=0.01):
     """
     Utility similar to np.allclose to compare modflow output arrays for code
