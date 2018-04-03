@@ -31,7 +31,6 @@ fds_out_file_names += ut.get_file_names(secondary_ws,
 fb_details_file_names += ut.get_file_names(secondary_ws,
                                            filter='fb_details.out')
 
-
 setup = [(lf, owhm2_output_ws, valid_output_ws) for lf in list_file_names]
 setup2 = [(bf, owhm2_output_ws, valid_output_ws) for bf in budget_file_names]
 setup3 = [(hf, owhm2_output_ws, valid_output_ws) for hf in head_file_names]
@@ -106,7 +105,6 @@ def test_fdsout(name, owhm2_ws, valid_ws):
     valid = ut.FarmOutputs(ws=valid_ws, outname=name)
     valid.raw_to_stress_period()
 
-    # todo: setup the success flag with the FarmOutput reader!
     if owhm2.success and valid.success:
         assert ut.farm_outputs_compare(owhm2, valid,
                                        incremental_tolerance=0.05,
@@ -118,7 +116,7 @@ def test_fdsout(name, owhm2_ws, valid_ws):
 
 
 @pytest.mark.parametrize("name,owhm2_ws,valid_ws", setup5)
-def test_fdsout(name, owhm2_ws, valid_ws):
+def test_fbdetails(name, owhm2_ws, valid_ws):
     ut.ErrorFile.write_model_name(name)
     owhm2 = ut.FarmOutputs(ws=owhm2_ws, outname=name)
     owhm2.raw_to_stress_period()

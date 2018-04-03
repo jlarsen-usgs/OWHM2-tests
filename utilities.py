@@ -243,6 +243,7 @@ class FarmOutputs(dict):
               'drch',
               'fid',
               'q-discrepancy[%]',
+              'q-drch-in',
               'q-in-out')
 
     isint = ('per', 'stp', 'fid')
@@ -259,7 +260,11 @@ class FarmOutputs(dict):
 
         super(FarmOutputs, self).__init__()
 
-        self.__get_budget()
+        try:
+            self.__get_budget()
+        except:
+            self.success = False
+
 
     def __get_budget(self):
         """
@@ -690,15 +695,21 @@ def farm_outputs_compare(sim_budget, valid_budget,
     :param offset: (float) small number dampening offset.
     :return: True == Pass, False == Fail
     """
-    if sim_budget.keys != valid_budget.keys:
+    if sim_budget.keys() != valid_budget.keys():
         ErrorFile.write_error("Farm numbers do not match")
         return False
 
-    for key in sim_budget.keys:
-        return budget_compare(sim_budget[key], valid_budget[key],
-                              incremental_tolerance=incremental_tolerance,
-                              budget_tolerance=budget_tolerance,
-                              offset=offset)
+
+    for key in sim_budget.keys():
+        t = budget_compare(sim_budget[key], valid_budget[key],
+                           incremental_tolerance=incremental_tolerance,
+                           budget_tolerance=budget_tolerance,
+                           offset=offset)
+
+        if not t:
+            return t
+
+    return True
 
 
 def get_file_names(ws, filter=".lst"):
