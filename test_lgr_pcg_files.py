@@ -6,8 +6,8 @@ import os
 ut.ErrorFile(error_name="lgr_error.txt")
 
 script_ws = os.path.dirname(os.path.abspath(__file__))
-valid_output_ws = os.path.join(script_ws, "OWHM_Example_Problems/test-out-true-lgr")
-owhm2_output_ws = os.path.join(script_ws, "OWHM_Example_Problems/test-out-lgr")
+valid_output_ws = os.path.join(script_ws, "OWHM_Example_Problems/test-run-owhm-lgr/fmp-lgr-lpf-test-out-true")
+owhm2_output_ws = os.path.join(script_ws, "OWHM_Example_Problems/test-run-owhm-lgr/fmp-lgr-lpf-test-out")
 
 list_file_names = []
 head_file_names = []

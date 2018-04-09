@@ -6,12 +6,14 @@ import os
 ut.ErrorFile(error_name="fmp_error.txt")
 
 script_ws = os.path.dirname(os.path.abspath(__file__))
-valid_output_ws = os.path.join(script_ws, "OWHM_Example_Problems/test-out-true-fmp")
-owhm2_output_ws = os.path.join(script_ws, "OWHM_Example_Problems/test-out-fmp")
+valid_output_ws = os.path.join(script_ws, "OWHM_Example_Problems/FMP2_Example_Model/test-out-true")
+owhm2_output_ws = os.path.join(script_ws, "OWHM_Example_Problems/FMP2_Example_Model/test-out")
 
 list_file_names = []
 head_file_names = []
 budget_file_names = []
+fds_file_names = []
+fbd_file_names = []
 
 for extension in ut.CommonExtentions.list_file:
     list_file_names += ut.get_file_names(valid_output_ws, filter=extension)
@@ -22,11 +24,11 @@ for extension in ut.CommonExtentions.budget_file:
 for extension in ut.CommonExtentions.head_file:
     head_file_names += ut.get_file_names(valid_output_ws, filter=extension)
 
-
 setup = [(lf, owhm2_output_ws, valid_output_ws) for lf in list_file_names]
 setup2 = [(bf, owhm2_output_ws, valid_output_ws) for bf in budget_file_names]
 setup3 = [(hf, owhm2_output_ws, valid_output_ws) for hf in head_file_names]
-
+setup4 = [(fd, owhm2_output_ws, valid_output_ws) for fd in fds_file_names]
+setup5 = [(fb, owhm2_output_ws, valid_output_ws) for fb in fbd_file_names]
 
 @pytest.mark.parametrize("name,owhm2_ws,valid_ws", setup)
 def test_list_budget(name, owhm2_ws, valid_ws):
@@ -85,3 +87,57 @@ def test_head_files(name, owhm2_ws, valid_ws):
             ut.ErrorFile.write_error("Unkown loading error\n")
             assert owhm2.success
             assert valid.success
+
+
+@pytest.mark.parametrize("name,owhm2_ws,valid_ws", setup4)
+def test_fdsout(name, owhm2_ws, valid_ws):
+    ut.ErrorFile.write_model_name(name)
+    owhm2 = ut.FarmOutputs(ws=owhm2_ws, outname=name)
+    owhm2.raw_to_stress_period()
+    valid = ut.FarmOutputs(ws=valid_ws, outname=name)
+    valid.raw_to_stress_period()
+
+    if owhm2.success and valid.success:
+        assert ut.farm_outputs_compare(owhm2, valid,
+                                       incremental_tolerance=0.05,
+                                       budget_tolerance=0.05)
+
+    else:
+        assert owhm2.success
+        assert valid.success
+
+
+@pytest.mark.parametrize("name,owhm2_ws,valid_ws", setup5)
+def test_fbdetails(name, owhm2_ws, valid_ws):
+    ut.ErrorFile.write_model_name(name)
+    owhm2 = ut.FarmOutputs(ws=owhm2_ws, outname=name)
+    owhm2.raw_to_stress_period()
+    valid = ut.FarmOutputs(ws=valid_ws, outname=name)
+    valid.raw_to_stress_period()
+
+    # todo: setup the success flag with the FarmOutput reader!
+    if owhm2.success and valid.success:
+        assert ut.farm_outputs_compare(owhm2, valid,
+                                       incremental_tolerance=0.05,
+                                       budget_tolerance=0.05)
+
+    else:
+        assert owhm2.success
+        assert valid.success
+
+"""
+for name in list_file_names:
+    ut.ErrorFile.write_model_name(name)
+    owhm2 = ut.ListBudget(ws=owhm2_output_ws, listname=name)
+    valid = ut.ListBudget(ws=valid_output_ws, listname=name)
+
+    if owhm2.success and valid.success:
+        assert ut.budget_compare(sim_budget=owhm2, valid_budget=valid,
+                                 incremental_tolerance=0.05,
+                                 budget_tolerance=0.05)
+
+    else:
+        ut.ErrorFile.write_error("Unkown loading error\n")
+        assert owhm2.success
+        assert valid.success
+"""

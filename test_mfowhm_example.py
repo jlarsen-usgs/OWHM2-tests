@@ -6,9 +6,9 @@ import os
 ut.ErrorFile(error_name="mfowhm_error.txt")
 
 script_ws = os.path.dirname(os.path.abspath(__file__))
-valid_output_ws = os.path.join(script_ws, "OWHMV2_FMP_TEST/OWHM_v1_vs_v2/v1/Output")
-owhm2_output_ws = os.path.join(script_ws, "OWHMV2_FMP_TEST/OWHM_v1_vs_v2/v2/Output")
-secondary_ws = os.path.join(script_ws, "OWHMV2_FMP_TEST/OWHM_v1_vs_v2/v1")
+valid_output_ws = os.path.join(script_ws, "OWHM_Example_Problems/OWHM_v1_vs_v2/v1/Output")
+owhm2_output_ws = os.path.join(script_ws, "OWHM_Example_Problems/OWHM_v1_vs_v2/v2/Output")
+secondary_ws = os.path.join(script_ws, "OWHM_Example_Problems/OWHM_v1_vs_v2/v1")
 
 list_file_names = []
 head_file_names = []

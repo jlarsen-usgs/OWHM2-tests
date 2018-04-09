@@ -140,6 +140,10 @@ class CellByCellBudget(dict):
     :param budgetname: (str) budget file name
     :param precision: (str) single or double are only valid params
     """
+
+    adjust = {"MNW2_IN": "MNW_IN",
+              "MNW2_OUT": "MNW_OUT"}
+
     def __init__(self, ws, budgetname, precision='single'):
         self.__ws = ws
         self.__name = budgetname
@@ -174,6 +178,14 @@ class CellByCellBudget(dict):
                 self.sucess = False
                 self.fail_list.append(name)
 
+        for key, new_key in CellByCellBudget.adjust.items():
+            if key in self:
+                self[new_key] = self[key]
+                self.pop(key)
+
+            else:
+                pass
+
     def keys(self):
         return [key for key in sorted(self)]
 
@@ -187,6 +199,10 @@ class ListBudget(dict):
     :param ws: (str) output directory workspace
     :param listname: (str) listing file name
     """
+
+    adjust = {"MNW2_IN": "MNW_IN",
+              "MNW2_OUT": "MNW_OUT"}
+
     def __init__(self, ws, listname, precision='single'):
         self.__ws = ws
         self.__name = listname
@@ -224,6 +240,14 @@ class ListBudget(dict):
             except:
                 self.success = False
                 self.fail_list.append(name)
+
+        for key, new_key in ListBudget.adjust.items():
+            if key in self:
+                self[new_key] = self[key]
+                self.pop(key)
+
+            else:
+                pass
 
     def keys(self):
         return [key for key in sorted(self)]
@@ -421,6 +445,10 @@ class FarmOutputs(dict):
 
     def keys(self):
         return [key for key in sorted(self)]
+
+
+
+
 
 
 def array_compare(sim_array, valid_array, cell_tol=0.01, array_tol=0.01):
