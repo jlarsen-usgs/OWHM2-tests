@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import itertools
+import os
 
 
 COLORS = itertools.cycle(["r", "y", "b", "g", "c", "m",
@@ -185,7 +186,7 @@ class ListBudgetOutput(object):
         return ax
 
 
-    def to_csv(self, ws="", name="test.csv"):
+    def to_csv(self, sim="valid", ws="", name="test.csv"):
         """
         Function to dump budget items to a formatted csv file
         for manipulation in excel
@@ -193,4 +194,34 @@ class ListBudgetOutput(object):
         :param ws: (str) directory name to dump csv file to
         :param name: (str) csv file name
         """
-        
+        sim = sim.lower()
+        if sim == "valid":
+            data = self.__valid
+
+        elif sim == "owhm2":
+            data = self.__owhm2
+
+        else:
+            raise KeyError()
+
+        header = [key for key in data.keys()]
+
+        xlen = len(data)
+        for key in header:
+            ylen = len(data[key])
+            break
+
+        arr = np.zeros((xlen, ylen))
+
+        for ix, key in enumerate(header):
+            t = data[key]
+            arr[ix, :] = t
+
+        with open(os.path.join(ws, name), "w") as f:
+            f.write(",".join(header))
+            f.write("\n")
+            np.savetxt(f, arr.T, fmt="%.4f", delimiter=",")
+
+
+
+
