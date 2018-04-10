@@ -8,6 +8,9 @@ COLORS = itertools.cycle(["r", "y", "b", "g", "c", "m",
                           "palevioletred", "darkseagreen",
                           "brown", "indigo"])
 
+# todo: create the budget item dump to csv file method.
+# todo: create a line graph method
+
 class ListBudgetOutput(object):
     """
     Class object to manipulate a pair of List Budget Files
@@ -26,6 +29,8 @@ class ListBudgetOutput(object):
         self.__keys = self.__valid.keys()
         self.__v_bar_x = "V {}"
         self.__o2_bar_x = "O2 {}"
+        self.__net_valid = {}
+        self.__net_owhm2 = {}
 
     def __get_net(self, keys, model='valid'):
         """
@@ -56,7 +61,11 @@ class ListBudgetOutput(object):
         for ix, pair in enumerate(pairs):
             d[nets[ix]] = model[pair[0]] - model[pair[1]]
 
-        return d
+        if model == "valid":
+            self.__net_valid = d
+
+        else:
+            self.__net_owhm2 = d
 
     def plot_budget_item(self, budget_item, *args, **kwargs):
         """
@@ -69,7 +78,37 @@ class ListBudgetOutput(object):
 
         :return: matplotlib axis object
         """
-        pass
+        budget_item = budget_item.upper()
+        ind = np.arange(self.__n)
+
+        if budget_item not in self.__keys:
+            # this may be a net function
+            ignore = ('TOTAL_IN', 'TOTAL_OUT', 'PERCENT_DISCREPANCY')
+            keys = self.__keys
+
+            for i in ignore:
+                keys.pop(keys.index(i))
+
+            self.__get_net(keys, 'valid')
+            self.__get_net(keys, 'owhm2')
+
+            if budget_item not in self.__net_owhm2:
+                raise KeyError("Key: {} not found".format(budget_item))
+
+            valid = self.__net_valid[budget_item]
+            owhm2 = self.__net_owhm2[budget_item]
+
+        else:
+            valid = self.__valid[budget_item]
+            owhm2 = self.__owhm2[budget_item]
+
+        fig = plt.figure()
+        ax = fig.add_subplot(111)
+
+        ax.plot(ind, valid, '--k', label="Valid {}".format(budget_item))
+        ax.plot(ind, owhm2, '.-r', label="OWHM2 {}".format(budget_item))
+
+        return ax
 
     def plot_bar_chart(self, *args, **kwargs):
         """
@@ -97,8 +136,12 @@ class ListBudgetOutput(object):
             ticks += [self.__v_bar_x.format(i),
                       self.__o2_bar_x.format(i)]
 
-        net_valid = self.__get_net(keys, 'valid')
-        net_owhm2 = self.__get_net(keys, 'owhm2')
+
+        self.__get_net(keys, 'valid')
+        self.__get_net(keys, 'owhm2')
+
+        net_valid = self.__net_valid
+        net_owhm2 = self.__net_owhm2
         keys = sorted(net_valid.keys())
 
         vp_bottom = np.zeros(vind.shape)
@@ -106,7 +149,7 @@ class ListBudgetOutput(object):
         op_bottom = np.zeros(oind.shape)
         on_bottom = np.zeros(oind.shape)
 
-        width = 0.2 # create a good metric to calculate this !
+        width = 0.25 # create a good metric to calculate this !
 
         fig = plt.figure()
         ax = fig.add_subplot(111)
@@ -132,15 +175,14 @@ class ListBudgetOutput(object):
 
             vp_bottom[v >= 0] += v[v >= 0]
             op_bottom[o >= 0] += o[o >= 0]
-            # vp_bottom[vbottom >= 0] += vbottom[vbottom >= 0]
-            # op_bottom[obottom >= 0] += obottom[obottom >= 0]
+
             vn_bottom[v < 0] += v[v < 0]
             on_bottom[o < 0] += o[o < 0]
 
         ax.set_xticks(ind, tuple(ticks))
         ax.set_xlim([min(ind), max(ind)])
 
-        plt.show()
+        return ax
 
 
     def to_csv(self, ws="", name="test.csv"):
@@ -151,3 +193,4 @@ class ListBudgetOutput(object):
         :param ws: (str) directory name to dump csv file to
         :param name: (str) csv file name
         """
+        
