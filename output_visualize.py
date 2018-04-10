@@ -53,14 +53,14 @@ class ListBudgetOutput(object):
                         break
 
         if model == 'valid':
-            model = self.__valid
+            model_data = self.__valid
 
         else:
-            model = self.__owhm2
+            model_data = self.__owhm2
 
         d = {}
         for ix, pair in enumerate(pairs):
-            d[nets[ix]] = model[pair[0]] - model[pair[1]]
+            d[nets[ix]] = model_data[pair[0]] - model_data[pair[1]]
 
         if model == "valid":
             self.__net_valid = d
@@ -106,8 +106,10 @@ class ListBudgetOutput(object):
         fig = plt.figure()
         ax = fig.add_subplot(111)
 
-        ax.plot(ind, valid, '--k', label="Valid {}".format(budget_item))
-        ax.plot(ind, owhm2, '.-r', label="OWHM2 {}".format(budget_item))
+        ax.plot(ind, valid, 'k', label="Valid {}".format(budget_item),
+                lw=2)
+        ax.plot(ind, owhm2, '--r', label="OWHM2 {}".format(budget_item),
+                lw=2)
 
         return ax
 
@@ -170,9 +172,10 @@ class ListBudgetOutput(object):
             bar_color = next(COLORS)
 
             ax.bar(vind, net_valid[key], width, color=bar_color,
-                   bottom=vbottom)
+                   bottom=vbottom, label="V: {}".format(key))
             ax.bar(oind, net_owhm2[key], width, color=bar_color,
-                   hatch='\\', alpha=0.5, bottom=obottom)
+                   hatch='\\', alpha=0.5, bottom=obottom,
+                   label="O: {}".format(key))
 
             vp_bottom[v >= 0] += v[v >= 0]
             op_bottom[o >= 0] += o[o >= 0]
@@ -182,9 +185,11 @@ class ListBudgetOutput(object):
 
         ax.set_xticks(ind, tuple(ticks))
         ax.set_xlim([min(ind), max(ind)])
+        box = ax.get_position()
+        ax.set_position([box.x0, box.y0, box.width * 0.80, box.height])
+        ax.legend(loc="center left", bbox_to_anchor=(1.00, 0.5), fontsize=9)
 
         return ax
-
 
     def to_csv(self, sim="valid", ws="", name="test.csv"):
         """
