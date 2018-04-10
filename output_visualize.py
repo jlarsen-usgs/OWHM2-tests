@@ -34,6 +34,12 @@ class ListBudgetOutput(object):
         self.__net_valid = {}
         self.__net_owhm2 = {}
 
+    @property
+    def net_keys(self):
+        self.__get_net(self.__valid.keys())
+        return [key for key in sorted(self.__net_valid.keys())
+                if key not in ("TOTAL", "IN-OUT", "PERCENT-DISCREPANCY")]
+
     def __get_net(self, keys, model='valid'):
         """
         Internal method to calculate net flux for each budget item
@@ -112,6 +118,8 @@ class ListBudgetOutput(object):
         ax.plot(ind, owhm2, '--r', label="OWHM2 {}".format(budget_item),
                 lw=2)
 
+        ax.set_xlim([min(ind), max(ind)])
+
         return ax
 
     def plot_bar_chart(self, *args, **kwargs):
@@ -153,7 +161,7 @@ class ListBudgetOutput(object):
         op_bottom = np.zeros(oind.shape)
         on_bottom = np.zeros(oind.shape)
 
-        width = 0.25 # create a good metric to calculate this !
+        width = 0.50 # create a good metric to calculate this !
 
         fig = plt.figure()
         ax = fig.add_subplot(111)
@@ -167,8 +175,8 @@ class ListBudgetOutput(object):
             vbottom[v < 0] = vn_bottom[v < 0]
             obottom[o < 0] = on_bottom[o < 0]
 
-            vbottom[vbottom == 0] = vp_bottom[vbottom == 0]
-            obottom[obottom == 0] = op_bottom[obottom == 0]
+            vbottom[v >= 0] = vp_bottom[v >= 0]
+            obottom[o >= 0] = op_bottom[o >= 0]
 
             bar_color = next(COLORS)
 
@@ -184,8 +192,9 @@ class ListBudgetOutput(object):
             vn_bottom[v < 0] += v[v < 0]
             on_bottom[o < 0] += o[o < 0]
 
-        ax.set_xticks(ind, tuple(ticks))
         ax.set_xlim([min(ind), max(ind)])
+        ax.set_xticks(ind, tuple(ticks))
+
         box = ax.get_position()
         ax.set_position([box.x0, box.y0, box.width * 0.80, box.height])
         ax.legend(loc="center left", bbox_to_anchor=(1.00, 0.5), fontsize=9)
