@@ -2,6 +2,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import itertools
 import os
+from copy import copy
 
 
 COLORS = itertools.cycle(["r", "y", "b", "g", "c", "m",
@@ -85,7 +86,7 @@ class ListBudgetOutput(object):
         if budget_item not in self.__keys:
             # this may be a net function
             ignore = ('TOTAL_IN', 'TOTAL_OUT', 'PERCENT_DISCREPANCY')
-            keys = self.__keys
+            keys = copy(self.__keys)
 
             for i in ignore:
                 keys.pop(keys.index(i))
@@ -126,7 +127,7 @@ class ListBudgetOutput(object):
         ignore = ('TOTAL_IN', 'TOTAL_OUT',
                   'IN-OUT', 'PERCENT_DISCREPANCY')
 
-        keys = self.__keys
+        keys = copy(self.__keys)
         for i in ignore:
             keys.pop(keys.index(i))
 
