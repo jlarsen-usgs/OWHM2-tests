@@ -1,0 +1,8 @@
+# OWHM2-tests
+Unit testing code for MODFLOW-OWHM2 
+
+Basic reading and visualization tools for unit-testing framework comparison of MODFLOW-OWHM and MODFLOW-OWHM2 models.
+
+Code base is fairly basic, with opportunities to extend functionality within existing classes using python built in constructor methods
+
+Version 0.1
