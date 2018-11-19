@@ -447,10 +447,6 @@ class FarmOutputs(dict):
         return [key for key in sorted(self)]
 
 
-
-
-
-
 def array_compare(sim_array, valid_array, cell_tol=0.01, array_tol=0.01):
     """
     Utility similar to np.allclose to compare modflow output arrays for code

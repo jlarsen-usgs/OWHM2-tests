@@ -13,6 +13,7 @@ COLORS = itertools.cycle(["r", "y", "b", "g", "c", "m",
 # todo: create the budget item dump to csv file method.
 # todo: create a line graph method
 
+
 class ListBudgetOutput(object):
     """
     Class object to manipulate a pair of List Budget Files
