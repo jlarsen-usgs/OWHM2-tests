@@ -270,10 +270,10 @@ class FarmOutputs(dict):
               'q-drch-in',
               'q-in-out')
 
-    isint = ('per', 'stp', 'fid')
-    isstr = ()
+    isint = ('per', 'stp', 'fid', 'crop')
+    isstr = ('crop_name')
 
-    def __init__(self, ws, outname):
+    def __init__(self, ws, outname, index='fid'):
         self.__ws = ws
         self.__name = outname
         self.__file = os.path.join(ws, outname)
@@ -281,6 +281,10 @@ class FarmOutputs(dict):
         self.success = True
         self.fail_list = []
         self.__timeunit = None
+        self.__index = index.lower()
+        self.__itype = int
+        if self.__index == "crop_name":
+            self.__itype = str
 
         super(FarmOutputs, self).__init__()
 
@@ -297,8 +301,12 @@ class FarmOutputs(dict):
         """
         with open(self.__file) as fout:
             self.__get_header(fout.readline())
-            kper_idx = self.__header.index('per')
-            fid_idx = self.__header.index('fid')
+            if 'per' in self.__header:
+                kper_idx = self.__header.index('per')
+            else:
+                kper_idx = self.__header.index('kper')
+
+            fid_idx = self.__header.index(self.__index)
 
             while True:
                 line = fout.readline()
@@ -306,7 +314,7 @@ class FarmOutputs(dict):
                     break
 
                 t = line.strip().split()
-                fid = int(t[fid_idx])
+                fid = self.__itype(t[fid_idx])
 
                 if fid not in self:
                     self[fid] = {}
@@ -347,38 +355,42 @@ class FarmOutputs(dict):
     def __get_header(self, line):
         self.__header = line.lower().strip().split()
 
-    def __set_timestep_length(self):
+    def __set_timestep_length(self, timeunit=None):
         for k, v in self.items():
-            if 'days' in v:
-                self.__timeunit = 'days'
-                cum_time = np.array(v['days'])
-                break
+            if timeunit is None:
+                if 'days' in v:
+                    self.__timeunit = 'days'
+                    cum_time = np.array(v['days'])
+                    break
 
-            elif 'minutes' in v:
-                self.__timeunit = 'minutes'
-                cum_time = np.array(v['minutes'])
-                break
+                elif 'minutes' in v:
+                    self.__timeunit = 'minutes'
+                    cum_time = np.array(v['minutes'])
+                    break
 
-            elif 'years' in v:
-                self.__timeunit = 'years'
-                cum_time = np.array(v['years'])
-                break
+                elif 'years' in v:
+                    self.__timeunit = 'years'
+                    cum_time = np.array(v['years'])
+                    break
 
-            elif 'seconds' in v:
-                self.__timeunit = 'seconds'
-                cum_time = np.array(v['seconds'])
-                break
+                elif 'seconds' in v:
+                    self.__timeunit = 'seconds'
+                    cum_time = np.array(v['seconds'])
+                    break
 
+                else:
+                    raise AssertionError("Cant discerne time step from data")
             else:
-                raise AssertionError("Cant discerne time step from data")
+                self.__timeunit = timeunit.lower()
+                cum_time = np.array(v['delt'])
 
-        ts_time = np.zeros(cum_time.shape)
-        ts_time[0] = cum_time[0]
+        # ts_time = np.zeros(cum_time.shape)
+        # ts_time[0] = cum_time[0]
 
-        ts_time[1:] = cum_time[1:] - cum_time[:-1]
+        # ts_time[1:] = cum_time[1:] - cum_time[:-1]
 
         for k in self:
-            self[k]['ts_time'] = ts_time
+            self[k]['ts_time'] = cum_time
 
     def __calculate_harmonic_mean(self, data_dict):
         """
@@ -390,21 +402,28 @@ class FarmOutputs(dict):
         for per, data in sorted(data_dict.items()):
             numerator = 0
             for ix, v in enumerate(data['data']):
+
                 numerator += (v * data['tslen'][ix])
 
             sp_data.append(numerator / np.sum(data['tslen']))
 
         return np.array(sp_data)
 
-    def raw_to_stress_period(self):
+    def raw_to_stress_period(self, timeunit=None):
         """
         Converts raw data to stress period based fluxes.
         """
-        ignore = ('per', 'stp', 'ts_time', 'days')
-        self.__set_timestep_length()
+        ignore = ('per', 'stp', 'ts_time', 'days', 'delt', 'crop_name',
+                  'kper', 'kstp', 'crop')
+        self.__set_timestep_length(timeunit=timeunit)
+
+        if 'per' in self.__header:
+            per_n = 'per'
+        else:
+            per_n = 'kper'
 
         for fid, datadict in self.items():
-            per = datadict['per']
+            per = datadict[per_n]
             ts_time = datadict['ts_time']
 
             for key, data in datadict.items():
@@ -427,21 +446,41 @@ class FarmOutputs(dict):
                     self[fid][key] = sp_data
 
             datadict.pop('ts_time')
-            datadict.pop('stp')
-            time = datadict[self.__timeunit]
+            if 'stp' in self.__header:
+                datadict.pop('stp')
+            else:
+                datadict.pop('kstp')
+
+            if timeunit is not None:
+                 time = datadict['delt']
+            else:
+                time = datadict[self.__timeunit]
 
             new_time = []
             t = per[0]
-            for ix, kper in enumerate(per):
-                if kper > t:
-                    t = kper
-                    new_time.append(time[ix - 1])
-                else:
-                    pass
+            if timeunit is not None:
+                temp = 0.
+                for ix, kper in enumerate(per):
+                    if kper > t:
+                        t = kper
+                        new_time.append(temp)
+                        temp += time[ix]
+                    else:
+                        temp += time[ix]
 
-            new_time.append(time[-1])
+                new_time.append(temp)
+            else:
+                for ix, kper in enumerate(per):
+                    if kper > t:
+                        t = kper
+                        new_time.append(time[ix - 1])
+                    else:
+                        pass
+
+                new_time.append(time[-1])
+
             self[fid][self.__timeunit] = new_time
-            self[fid]['per'] = np.arange(1, np.max(per) + 1, dtype=int)
+            self[fid][per_n] = np.arange(1, np.max(per) + 1, dtype=int)
 
     def keys(self):
         return [key for key in sorted(self)]
